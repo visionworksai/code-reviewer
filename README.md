@@ -1,6 +1,6 @@
 # ✅ VisionWorks AI Code Reviewer
 
-Automated code review powered by **Google Gemini**, **OpenAI**, **Claude**, and **DeepSeek** – triggered by PR comments.
+Automated code review powered by **Google Gemini**, **OpenAI**, **Claude**, and **Local LLM** – triggered by PR comments.
 
 ---
 
@@ -18,7 +18,7 @@ VisionWorks AI Code Reviewer is a reusable GitHub Action that performs automated
   - ✅ Google Gemini
   - ✅ OpenAI GPT
   - ✅ Claude by Anthropic
-  - ✅ DeepSeek Coder
+  - ✅ Local LLM (DeepSeek Coder 6.7b via Ollama)
 - 🎯 Exclude specific file types with glob patterns
 - 🔐 Secure – requires each user to define their own secrets
 - 🛡️ Secure failover if required keys are missing
@@ -65,12 +65,10 @@ jobs:
 
 ```
 
-2. Add **secrets** to your GitHub repo:
-
+2. Add **secrets** to your GitHub repo (only for cloud models):
    - `GEMINI_API_KEY` – for Gemini
    - `OPENAI_API_KEY` – for OpenAI
    - `CLAUDE_API_KEY` – for Claude
-   - `DEEPSEEK_API_KEY` – for DeepSeek
 
 ---
 
@@ -98,7 +96,10 @@ with:
   GEMINI_MODEL: gemini-1.5-flash-001
   OPENAI_MODEL: gpt-4
   CLAUDE_MODEL: claude-3-haiku-20240307
+<<<<<<< Updated upstream
   DEEPSEEK_MODEL: deepseek-coder:1.3b
+=======
+>>>>>>> Stashed changes
 ```
 
 ---
@@ -115,8 +116,7 @@ with:
 | `OPENAI_MODEL`      | Optional: override OpenAI model                       |
 | `CLAUDE_API_KEY`    | Required for Claude reviews                           |
 | `CLAUDE_MODEL`      | Optional: override Claude model                       |
-| `DEEPSEEK_API_KEY`  | Required for DeepSeek reviews                         |
-| `DEEPSEEK_MODEL`    | Optional: override DeepSeek model                     |
+| `OLLAMA_URL`        | URL for Ollama API (default: http://localhost:11434)  |
 
 ---
 
@@ -125,23 +125,15 @@ with:
 ```
 visionworks_code_reviewer.py     # Main entry point
 models/
-  ├── __init__.py                # Model router / factory
-  ├── base_model.py              # Common base interface
-  ├── gemini_model.py            # Gemini integration
-  ├── openai_model.py            # OpenAI integration
-  ├── claude_model.py            # Claude integration
-  └── deepseek_model.py          # DeepSeek integration
-github_utils.py                  # GitHub API + comment posting
-diff_utils.py                    # Diff parsing + filtering
+  ├── __init__.py               # Model router / factory
+  ├── base_model.py             # Common base interface
+  ├── gemini_model.py           # Gemini integration
+  ├── openai_model.py           # OpenAI integration
+  ├── claude_model.py           # Claude integration
+  └── deepseek_model.py         # Local LLM integration (via Ollama)
+github_utils.py                 # GitHub API + comment posting
+diff_utils.py                  # Diff parsing + filtering
 ```
-
----
-
-## ➕ Adding New Models
-
-1. Add a new file in `models/` (e.g. `my_model.py`)
-2. Inherit from `BaseAIModel`
-3. Register your model inside `models/__init__.py`
 
 ---
 
@@ -149,10 +141,16 @@ diff_utils.py                    # Diff parsing + filtering
 
 - Python 3.7+
 - Dependencies:
-  - `PyGithub`, `github3.py`, `openai>=1.0.0`
-  - `google-generativeai`, `google-ai-generativelanguage`
-  - `requests`, `unidiff`
-  - (Optional for DeepSeek: `httpx` or `requests`)
+  - `google-ai-generativelanguage==0.6.10` - Google AI Language API
+  - `google-generativeai` - Google Gemini API
+  - `PyGitHub` - GitHub API client
+  - `github3.py==1.3.0` - GitHub API client
+  - `unidiff` - Diff parsing
+  - `openai>=1.0.0` - OpenAI API
+  - `anthropic>=0.5.0` - Claude API
+  - `requests>=2.28.0` - HTTP client
+  - Docker (for local LLM)
+  - Ollama
 
 ---
 
@@ -165,7 +163,11 @@ diff_utils.py                    # Diff parsing + filtering
 | **Claude 3 Sonnet**| Balanced, reliable                | Great general-purpose choice        |
 | **Claude 3 Haiku** | Fastest, cheapest Claude          | Ideal for quick/cheap reviews       |
 | **Claude 3 Opus**  | Most powerful Claude              | High cost, deep reasoning           |
+<<<<<<< Updated upstream
 | **Local Reviewer** | Slow, open-source focused         | You can customize according to your device |
+=======
+| **Local LLM**      | Private, no API costs             | Uses DeepSeek Coder 6.7b via Ollama |
+>>>>>>> Stashed changes
 
 ---
 
@@ -174,6 +176,7 @@ diff_utils.py                    # Diff parsing + filtering
 - This action does **not store, reuse, or expose your API keys**
 - All keys are required to be provided via repo-level GitHub Secrets
 - The action **fails securely** if required secrets are missing
+- Local LLM review runs completely on your infrastructure
 
 ---
 
@@ -182,6 +185,7 @@ diff_utils.py                    # Diff parsing + filtering
 - [x] Support Google Gemini
 - [x] Support OpenAI GPT
 - [x] Support Claude 3
+<<<<<<< Updated upstream
 - [x] Support DeepSeek 
 - [ ] Support new local models
 - [ ] Optional Slack/Discord integration
@@ -189,3 +193,30 @@ diff_utils.py                    # Diff parsing + filtering
 ## Known Issues
 - [ ] Review line numbers in local reviewer are sometimes different from the actual line.
 - [ ] Improve acceleration/performance for local reviewers.
+=======
+- [x] Support Local LLM via Ollama
+- [ ] Support additional local models
+- [ ] Optional Slack/Discord integration
+
+## Using Local Review
+
+The code reviewer supports using local LLM models through Ollama. This is useful for environments where you want to keep your code analysis private or don't have access to external API services.
+
+### Setup for Local Review
+
+The workflow will automatically:
+- Start Ollama container if not running
+- Pull and use the DeepSeek Coder 6.7b model for review
+- Stop the container after completion
+
+### Configuration
+
+You can configure the local review behavior through environment variables:
+
+```yaml
+with:
+  OLLAMA_URL: "http://localhost:11434"  # Default Ollama API URL
+```
+
+For optimal performance, we recommend using a GPU-enabled runner with CUDA support.
+>>>>>>> Stashed changes
