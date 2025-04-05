@@ -1,0 +1,29 @@
+name: AI Code Review
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions: write-all
+
+jobs:
+  ai-code-review:
+    if: |
+      github.event.issue.pull_request && (
+        contains(github.event.comment.body, '/gemini-review') ||
+        contains(github.event.comment.body, '/openai-review') ||
+        contains(github.event.comment.body, '/claude-review') ||
+        contains(github.event.comment.body, '/local-review')
+      )
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run AI Reviewer
+        uses: visionworksai/ai-code-reviewer@main
+        with:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          INPUT_EXCLUDE: "*.md, docs/**, *.json"

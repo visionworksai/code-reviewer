@@ -1,0 +1,8 @@
+google-ai-generativelanguage==0.6.10
+google-generativeai
+PyGitHub
+github3.py==1.3.0
+unidiff
+openai>=1.0.0
+anthropic>=0.5.0
+requests>=2.28.0

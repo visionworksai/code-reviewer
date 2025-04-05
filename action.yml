@@ -1,0 +1,168 @@
+name: AI Code Reviewer
+description: "PR changes are reviewed by Gemini / OpenAI / Claude / DeepSeek"
+author: "visionworksai"
+
+inputs:
+  DEEPSEEK_MODEL_NAME:
+    description: "Name of the DeepSeek model to use with Ollama"
+    required: false
+    default: "deepseek-coder:6.7b"
+
+  DEEPSEEK_TEMPERATURE:
+    description: "Temperature for DeepSeek model generation"
+    required: false
+    default: "0.1"
+
+  DEEPSEEK_TOP_P:
+    description: "Top-p sampling value for DeepSeek"
+    required: false
+    default: "0.95"
+
+  DEEPSEEK_MAX_TOKENS:
+    description: "Max tokens for DeepSeek output"
+    required: false
+    default: "2048"
+
+  OLLAMA_URL:
+    description: "URL for Ollama API"
+    required: false
+    default: "http://localhost:11434"
+
+  GEMINI_API_KEY:
+    description: "Google Gemini API key"
+    required: false
+
+  GEMINI_MODEL:
+    description: "Gemini model name"
+    required: false
+    default: "gemini-1.5-flash-001"
+
+  OPENAI_API_KEY:
+    description: "OpenAI API key"
+    required: false
+
+  OPENAI_MODEL:
+    description: "OpenAI model name"
+    required: false
+    default: "gpt-4"
+
+  CLAUDE_API_KEY:
+    description: "Anthropic Claude API key"
+    required: false
+
+  CLAUDE_MODEL:
+    description: "Claude model name"
+    required: false
+    default: "claude-3-opus-20240229"
+
+  INPUT_EXCLUDE:
+    description: "Files or folders to exclude from AI review"
+    required: false
+    default: "*.md, docs/**, *.json"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Detect AI Model Type from PR comment
+      id: detect_model
+      run: |
+        body=$(jq -r .comment.body "$GITHUB_EVENT_PATH")
+        if [[ "$body" == *"/openai-review"* ]]; then
+          echo "AI_MODEL_TYPE=openai" >> $GITHUB_ENV
+        elif [[ "$body" == *"/claude-review"* ]]; then
+          echo "AI_MODEL_TYPE=claude" >> $GITHUB_ENV
+        elif [[ "$body" == *"/local-review"* ]]; then
+          echo "AI_MODEL_TYPE=deepseek" >> $GITHUB_ENV
+        else
+          echo "AI_MODEL_TYPE=gemini" >> $GITHUB_ENV
+        fi
+      shell: bash
+
+    - name: Fail if required secret is missing
+      run: |
+        if [[ "$AI_MODEL_TYPE" == "openai" && -z "${{ inputs.OPENAI_API_KEY }}" ]]; then
+          echo "❌ OPENAI_API_KEY is missing. Please add it to your repo secrets."
+          exit 1
+        elif [[ "$AI_MODEL_TYPE" == "claude" && -z "${{ inputs.CLAUDE_API_KEY }}" ]]; then
+          echo "❌ CLAUDE_API_KEY is missing. Please add it to your repo secrets."
+          exit 1
+        elif [[ "$AI_MODEL_TYPE" == "gemini" && -z "${{ inputs.GEMINI_API_KEY }}" ]]; then
+          echo "❌ GEMINI_API_KEY is missing. Please add it to your repo secrets."
+          exit 1
+        fi
+      shell: bash
+
+    - name: Start Ollama via Docker and pull model if needed
+      if: env.AI_MODEL_TYPE == 'deepseek'
+      run: |
+        echo "🐳 Ensuring Ollama container is running..."
+
+        MODEL_NAME="${{ inputs.DEEPSEEK_MODEL_NAME }}"
+
+        # If container doesn't exist, run it
+        if ! docker ps -a --format '{{.Names}}' | grep -q '^ollama$'; then
+          echo "🚀 Ollama container not found. Creating and starting..."
+          docker run -d --name ollama \
+            -p 11434:11434 \
+            -v ollama-data:/root/.ollama \
+            ollama/ollama
+          sleep 5
+        elif ! docker ps --format '{{.Names}}' | grep -q '^ollama$'; then
+          echo "🔄 Ollama container exists but not running. Starting..."
+          docker start ollama
+          sleep 5
+        else
+          echo "✅ Ollama container is already running"
+        fi
+
+        echo "📦 Checking if model $MODEL_NAME is available..."
+        if ! docker exec ollama ollama list | grep -q "$MODEL_NAME"; then
+          echo "⬇️ Pulling model: $MODEL_NAME..."
+          docker exec ollama ollama pull "$MODEL_NAME"
+        else
+          echo "✅ Model already exists: $MODEL_NAME"
+        fi
+      shell: bash
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        if [ -f "${{ github.action_path }}/requirements.txt" ]; then
+          pip install -r ${{ github.action_path }}/requirements.txt
+        else
+          echo "⚠️ No requirements.txt found, skipping Python dependency install"
+        fi
+      shell: bash
+
+    - name: Run AI Code Reviewer
+      run: python ${{ github.action_path }}/visionworks_code_reviewer.py
+      shell: bash
+      env:
+        GEMINI_API_KEY: ${{ inputs.GEMINI_API_KEY }}
+        GEMINI_MODEL: ${{ inputs.GEMINI_MODEL }}
+        OPENAI_API_KEY: ${{ inputs.OPENAI_API_KEY }}
+        OPENAI_MODEL: ${{ inputs.OPENAI_MODEL }}
+        CLAUDE_API_KEY: ${{ inputs.CLAUDE_API_KEY }}
+        CLAUDE_MODEL: ${{ inputs.CLAUDE_MODEL }}
+        DEEPSEEK_MODEL_NAME: ${{ inputs.DEEPSEEK_MODEL_NAME }}
+        DEEPSEEK_TEMPERATURE: ${{ inputs.DEEPSEEK_TEMPERATURE }}
+        DEEPSEEK_TOP_P: ${{ inputs.DEEPSEEK_TOP_P }}
+        DEEPSEEK_MAX_TOKENS: ${{ inputs.DEEPSEEK_MAX_TOKENS }}
+        OLLAMA_URL: ${{ inputs.OLLAMA_URL }}
+        INPUT_EXCLUDE: ${{ inputs.INPUT_EXCLUDE }}
+        AI_MODEL_TYPE: ${{ env.AI_MODEL_TYPE }}
+        GITHUB_TOKEN: ${{ github.token }}
+        GITHUB_EVENT_PATH: ${{ github.event_path }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+
+    - name: Stop Ollama container after run
+      if: env.AI_MODEL_TYPE == 'deepseek'
+      run: |
+        echo "🛑 Stopping Ollama container..."
+        docker stop ollama
+      shell: bash
