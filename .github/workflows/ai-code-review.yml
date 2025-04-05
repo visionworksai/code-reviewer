@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run AI Reviewer
-        uses: visionworksai/ai-code-reviewer@main
+        uses: visionworksai/code-reviewer@v1
         with:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
