@@ -6,7 +6,7 @@ Automated code review powered by **Google Gemini**, **OpenAI**, **Claude**, and 
 
 ## 🚀 Overview
 
-VisionWorks AI Code Reviewer is a reusable GitHub Action that performs automated, AI-powered code reviews. When you comment on a pull request (e.g. `/openai-review`, `/gemini-review`, `/claude-review`, `/deepseek-review`), it uses the selected model to analyze the code diff and provide line-by-line feedback.
+VisionWorks AI Code Reviewer is a reusable GitHub Action that performs automated, AI-powered code reviews. When you comment on a pull request (e.g. `/openai-review`, `/gemini-review`, `/claude-review`, `/local-review`), it uses the selected model to analyze the code diff and provide line-by-line feedback.
 
 ---
 
@@ -83,7 +83,7 @@ jobs:
 /gemini-review
 /openai-review
 /claude-review
-/deepseek-review
+/local-review
 ```
 
 3. The action will:
@@ -98,7 +98,7 @@ with:
   GEMINI_MODEL: gemini-1.5-flash-001
   OPENAI_MODEL: gpt-4
   CLAUDE_MODEL: claude-3-haiku-20240307
-  DEEPSEEK_MODEL: deepseek-reasoner
+  DEEPSEEK_MODEL: deepseek-coder:1.3b
 ```
 
 ---
@@ -165,7 +165,7 @@ diff_utils.py                    # Diff parsing + filtering
 | **Claude 3 Sonnet**| Balanced, reliable                | Great general-purpose choice        |
 | **Claude 3 Haiku** | Fastest, cheapest Claude          | Ideal for quick/cheap reviews       |
 | **Claude 3 Opus**  | Most powerful Claude              | High cost, deep reasoning           |
-| **DeepSeek Reasoner** | Fast, open-source focused         | Great for dev-heavy PRs             |
+| **Local Reviewer** | Slow, open-source focused         | You can customize according to your device |
 
 ---
 
@@ -185,3 +185,7 @@ diff_utils.py                    # Diff parsing + filtering
 - [x] Support DeepSeek 
 - [ ] Support new local models
 - [ ] Optional Slack/Discord integration
+
+## Known Issues
+- [ ] Review line numbers in local reviewer are sometimes different from the actual line.
+- [ ] Improve acceleration/performance for local reviewers.
