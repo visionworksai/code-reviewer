@@ -96,10 +96,7 @@ with:
   GEMINI_MODEL: gemini-1.5-flash-001
   OPENAI_MODEL: gpt-4
   CLAUDE_MODEL: claude-3-haiku-20240307
-<<<<<<< Updated upstream
-  DEEPSEEK_MODEL: deepseek-coder:1.3b
-=======
->>>>>>> Stashed changes
+  DEEPSEEK_MODEL: deepseek-coder:6.7b
 ```
 
 ---
@@ -163,11 +160,8 @@ diff_utils.py                  # Diff parsing + filtering
 | **Claude 3 Sonnet**| Balanced, reliable                | Great general-purpose choice        |
 | **Claude 3 Haiku** | Fastest, cheapest Claude          | Ideal for quick/cheap reviews       |
 | **Claude 3 Opus**  | Most powerful Claude              | High cost, deep reasoning           |
-<<<<<<< Updated upstream
 | **Local Reviewer** | Slow, open-source focused         | You can customize according to your device |
-=======
 | **Local LLM**      | Private, no API costs             | Uses DeepSeek Coder 6.7b via Ollama |
->>>>>>> Stashed changes
 
 ---
 
@@ -185,7 +179,6 @@ diff_utils.py                  # Diff parsing + filtering
 - [x] Support Google Gemini
 - [x] Support OpenAI GPT
 - [x] Support Claude 3
-<<<<<<< Updated upstream
 - [x] Support DeepSeek 
 - [ ] Support new local models
 - [ ] Optional Slack/Discord integration
@@ -193,7 +186,6 @@ diff_utils.py                  # Diff parsing + filtering
 ## Known Issues
 - [ ] Review line numbers in local reviewer are sometimes different from the actual line.
 - [ ] Improve acceleration/performance for local reviewers.
-=======
 - [x] Support Local LLM via Ollama
 - [ ] Support additional local models
 - [ ] Optional Slack/Discord integration
