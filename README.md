@@ -43,35 +43,25 @@ permissions: write-all
 
 jobs:
   ai-review:
-    runs-on: self-hosted  # or ubuntu-latest
+    runs-on: self-hosted
 
     steps:
-      ### Stage 1: Checkout Repository
-      - name: 📥 Checkout PR code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      ### Stage 2: Run AI Reviewer
-      - name: 🤖 AI Code Reviewer
-        uses: visionworksai/ai-code-reviewer@v1.0.0
+      - name: Run AI Reviewer
+        uses: visionworksai/code-reviewer@v1
         with:
-          # Google Gemini
-          GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL:      gemini-1.5-flash-001
+          # /gemini-review → triggers Gemini
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-          # OpenAI GPT
-          OPENAI_API_KEY:    ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL:      gpt-4
+          # /openai-review → triggers OpenAI
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
-          # Claude by Anthropic
-          CLAUDE_API_KEY:    ${{ secrets.CLAUDE_API_KEY }}
-          CLAUDE_MODEL:      claude-3-haiku-20240307
+          # /claude-review → triggers Claude
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
 
-          # DeepSeek
-          DEEPSEEK_API_KEY:  ${{ secrets.DEEPSEEK_API_KEY }}
-          DEEPSEEK_MODEL:    deepseek-reasoner
-
-          # Optional exclusions
-          INPUT_EXCLUDE:     "*.md, docs/**"
+          # /local-review → triggers DeepSeek via Ollama (uses default model from action)
+          INPUT_EXCLUDE: "*.md, docs/**"
 
 ```
 
@@ -192,59 +182,6 @@ diff_utils.py                    # Diff parsing + filtering
 - [x] Support Google Gemini
 - [x] Support OpenAI GPT
 - [x] Support Claude 3
-- [x] Support DeepSeek 🚀
-- [ ] Support local or self-hosted models
+- [x] Support DeepSeek 
+- [ ] Support new local models
 - [ ] Optional Slack/Discord integration
-
-## Using Local Models with llama.cpp
-
-The code reviewer now supports using local LLM models through the llama.cpp library. This is useful for environments where you want to keep your code analysis private or don't have access to external API services.
-
-### Qwen2.5 Model Support
-
-By default, the code reviewer is configured to use the Qwen2.5-7B model, which provides excellent code understanding capabilities in a compact size. The model will be automatically downloaded if not present on the system.
-
-### Setup for Local Models
-
-1. Install the necessary dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. Run with the Qwen2.5 model (auto-downloads if not present):
-   ```bash
-   export AI_MODEL_TYPE="llama"
-   # The rest of your command to run the code reviewer
-   ```
-
-3. Optional: Configure model parameters:
-   ```bash
-   # Optional (defaults optimized for Qwen2.5)
-   export LLAMA_CONTEXT_SIZE="4096"     # Context window size
-   export LLAMA_GPU_LAYERS="-1"         # Number of layers to offload to GPU (-1 for auto)
-   export LLAMA_TEMPERATURE="0.1"       # Temperature (lower for Qwen2.5)
-   export LLAMA_REPEAT_PENALTY="1.1"    # Helps prevent repetition
-   ```
-
-### Using Custom Models
-
-If you prefer to use a different model, you can download any GGUF format model compatible with llama.cpp:
-
-1. Download a compatible model such as:
-   - CodeLlama
-   - WizardCoder
-   - DeepSeek Coder
-   - Any other GGUF format model compatible with llama.cpp
-
-2. Set the model path:
-   ```bash
-   export LLAMA_MODEL_PATH="/path/to/your/model.gguf"
-   export AI_MODEL_TYPE="llama"
-   ```
-
-For optimal performance, we recommend using a GPU with CUDA or Metal support for faster inference.
-
-### Qwen2.5 Model Source
-
-The default Qwen2.5-7B model is sourced from Hugging Face:
-https://huggingface.co/QuantFactory/Qwen2.5-7B-GGUF/resolve/main/Qwen2.5-7B.Q2_K.gguf
